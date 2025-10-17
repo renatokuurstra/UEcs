@@ -1,0 +1,29 @@
+﻿{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "UEcs",
+  "Description": "UEcs plugin scaffolding with private third-party EnTT vendoring path.",
+  "Category": "ECS",
+  "CreatedBy": "ExperimentsECSNN",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "IsExperimentalVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "UEcs",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "UEcsTests",
+      "Type": "Developer",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
