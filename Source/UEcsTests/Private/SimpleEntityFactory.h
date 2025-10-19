@@ -6,19 +6,15 @@
 #include "Components/PositionComp.h"
 #include "Components/DirectionComp.h"
 
-#include "SimpleEntityFactory.generated.h"
-
-UCLASS()
-class UECSTESTS_API USimpleEntityFactory : public UEcsEntityFactory
+struct FSimpleEntityFactory : public FEcsEntityFactory
 {
-	GENERATED_BODY()
-	
 protected:
-	virtual void BuildEntitiesInternal() override
+	virtual void BuildEntitiesInternal(int32 Count) override
 	{
-		// Specify component types explicitly when calling CreateDefaultEntity
-		CreateDefaultEntity<FSpeedComp, FPositionComp, FDirectionComp>();
-		CreateDefaultEntity<FSpeedComp, FPositionComp, FDirectionComp>();
-		CreateDefaultEntity<FSpeedComp, FPositionComp, FDirectionComp>();
+		// Build Count default entities with the three components
+		for (int32 i = 0; i < Count; ++i)
+		{
+			CreateDefaultEntity<FSpeedComp, FPositionComp, FDirectionComp>();
+		}
 	}
 };
