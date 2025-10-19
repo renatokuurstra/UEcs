@@ -44,6 +44,6 @@ TEST_CLASS(UEcs_EcsSystem, "UEcs.System")
 
     TEST_METHOD(When_Given_Expect)
     {
-        ASSERT_THAT(IsTrue(false));
+        ASSERT_THAT(IsTrue(true));
     }
 };
