@@ -22,12 +22,18 @@ class UECS_API AEcsContext : public AActor
 public:
 	AEcsContext();
 
+	UFUNCTION(BlueprintCallable, Category = "ECS|Systems")
+	void ExecuteEvent(FName& EventName);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	void InitialiseTickFunctions();
+
+	UPROPERTY(EditDefaultsOnly, Category="ECS|Systems")
+    TObjectPtr<class UEcsSystemEvents> EcsSystemsEvents; 
 	
 	// Internal dispatcher for tick functions
 	void TickGroupUpdate(float DeltaTime, ETickingGroup Group);

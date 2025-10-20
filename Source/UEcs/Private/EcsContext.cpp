@@ -2,6 +2,7 @@
 #include "EcsContext.h"
 
 #include "EcsSystem.h"
+#include "EcsSystemEvents.h"
 #include "Engine/World.h"
 
 // FContextTickFunction implementation
@@ -17,6 +18,20 @@ AEcsContext::AEcsContext()
 {
 	PrimaryActorTick.bCanEverTick = false; // we use custom tick functions per group
 
+}
+
+void AEcsContext::ExecuteEvent(FName& EventName)
+{
+	if(EcsSystemsEvents)
+	{
+		if (auto* SystemsChain = EcsSystemsEvents->SystemsEvents.Find(EventName))
+		{
+			for (auto& System : SystemsChain->Systems)
+			{
+				System->Update();
+			}
+		}
+	}
 }
 
 void AEcsContext::BeginPlay()

@@ -33,7 +33,7 @@ public:
 
 	//This should be called by the system design to update all entities.
 	UFUNCTION(BlueprintCallable, Category = "ECS|System")
-	virtual void Update(float DeltaTime) {}
+	virtual void Update(float DeltaTime = 0.0f) {}
     
 protected:
 	
