@@ -1,4 +1,5 @@
-﻿#include "EcsContext.h"
+﻿//Copyright (c) 2025 Renato Kuurstra. Licensed under the MIT License. See LICENSE file in the project root for details.
+#include "EcsContext.h"
 
 #include "EcsSystem.h"
 #include "Engine/World.h"

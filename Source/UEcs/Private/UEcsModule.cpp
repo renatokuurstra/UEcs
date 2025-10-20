@@ -1,4 +1,5 @@
-﻿#include "UEcsModule.h"
+﻿//Copyright (c) 2025 Renato Kuurstra. Licensed under the MIT License. See LICENSE file in the project root for details.
+#include "UEcsModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
 #include "Misc/MessageDialog.h"

@@ -1,4 +1,5 @@
-﻿// Tests for UEcs::EcsEntityFactory
+﻿//Copyright (c) 2025 Renato Kuurstra. Licensed under the MIT License. See LICENSE file in the project root for details.
+// Tests for UEcs::EcsEntityFactory
 
 #include "CoreMinimal.h"
 #include "CQTest.h"
