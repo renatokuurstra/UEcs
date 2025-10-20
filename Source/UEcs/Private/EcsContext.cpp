@@ -69,10 +69,34 @@ void AEcsContext::BeginPlay()
 
 void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// Stop ticking first
 	PrePhysicsTick.UnRegisterTickFunction();
 	DuringPhysicsTick.UnRegisterTickFunction();
 	PostPhysicsTick.UnRegisterTickFunction();
 	PostUpdateTick.UnRegisterTickFunction();
+
+	// Helper to deinitialize and null systems, then empty arrays
+	auto CleanupSystems = [](TArray<UEcsSystem*>& Systems)
+	{
+		for (UEcsSystem*& Sys : Systems)
+		{
+			if (Sys)
+			{
+				Sys->Deinitialize();
+			}
+			Sys = nullptr;
+		}
+		Systems.Empty();
+	};
+
+	CleanupSystems(PrePhysicsSystems);
+	CleanupSystems(DuringPhysicsSystems);
+	CleanupSystems(PostPhysicsSystems);
+	CleanupSystems(PostUpdateSystems);
+
+	// Dispose of all entities/components and reset the registry
+	Registry.clear();
+	Registry = entt::registry{};
 
 	Super::EndPlay(EndPlayReason);
 }

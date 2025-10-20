@@ -27,6 +27,9 @@ public:
 	TArray<UScriptStruct*> RequiredComponents;
     
 	virtual void Initialize(entt::registry& InRegistry) { Registry = &InRegistry;}
+	
+	// Allow context to cleanup references on EndPlay
+	virtual void Deinitialize() { Registry = nullptr; }
 
 	//This should be called by the system design to update all entities.
 	UFUNCTION(BlueprintCallable, Category = "ECS|System")
