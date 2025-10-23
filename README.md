@@ -26,3 +26,6 @@ I want this to be very simple, relateively strict and intuitive. After a first s
 
 In my world even blueprints will be able to use this, as I'm a big fan of democratizing the development process. The goal of this plugin is not only forcing the user to follow more DOP principles, but also to simplify and publicize the ECS pattern.
 
+## TODO
+1. Making entt private. Currently it needs to be public because I'm a lazy person.
+
