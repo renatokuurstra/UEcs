@@ -28,10 +28,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ECS|System", meta = (AllowPrivateAccess = "true"))
 	TArray<UScriptStruct*> RequiredComponents;
     
-	virtual void Initialize(entt::registry& InRegistry) { Registry = &InRegistry;}
+	virtual void Initialize(entt::registry& InRegistry) { EntitiesRegistry = &InRegistry;}
 	
 	// Allow context to cleanup references on EndPlay
-	virtual void Deinitialize() { Registry = nullptr; }
+	virtual void Deinitialize() { EntitiesRegistry = nullptr; }
 
 	//This should be called by the system design to update all entities.
 	UFUNCTION(BlueprintCallable, Category = "ECS|System")
@@ -39,6 +39,13 @@ public:
     
 protected:
 	
+	// Provide controlled access to the registry for systems that need to spawn/maintain entities
+	entt::registry& GetRegistry() const
+	{
+		check(EntitiesRegistry);
+		return *EntitiesRegistry;
+	}
+
 	// Register a component type (called in subclass constructor)
 	template<typename T>
 	void RegisterComponent()
@@ -70,40 +77,10 @@ protected:
 #endif
 
 		// Return EnTT's view directly
-		return Registry->view<TComponents...>();
-	}
-
-	// Returns a non-owning view over the contiguous component storage for TComponent.
-	// Components are expected to be stored by value in EnTT. Do NOT pass pointer types here.
-	template<typename TComponent>
-	TArrayView<TComponent> GetComponentArray()
-	{
-		static_assert(std::is_same_v<TComponent, std::decay_t<TComponent>>, 
-			"Component type must not be a reference or cv-qualified");
-		static_assert(!std::is_pointer_v<TComponent>, "Component type must be value-backed (no pointers)");
-
-#if WITH_EDITOR || UE_BUILD_DEBUG
-		// Validation only in editor/Debug builds
-		UScriptStruct* ComponentStruct = TComponent::StaticStruct();
-		checkf(RequiredComponents.Contains(ComponentStruct),
-			TEXT("System '%s' attempted to access undeclared component '%s'. Register it in the constructor using RegisterComponent<%s>()"),
-			*GetName(),
-			*ComponentStruct->GetName(),
-			*ComponentStruct->GetName());
-#endif
-
-		// Get the storage for this component type (value-backed)
-		auto& Storage = Registry->storage<TComponent>();
-
-		//TODO Verify Storage.raw()
-		//this is weird, storage.raw should return a *, but instead it return a **
-		//this happens regardless of type, maybe shenanigans with templates?
-		auto Raw =  Storage.size() ? *Storage.raw() : nullptr;
-		const int32 Count = static_cast<int32>(Storage.size());
-		return TArrayView<TComponent>(Raw, Count);
+		return EntitiesRegistry->view<TComponents...>();
 	}
 
 private:
 	// Not owned; set by Initialize() and cleared by Deinitialize().
-	entt::registry* Registry = nullptr;
+	entt::registry* EntitiesRegistry = nullptr;
 };
