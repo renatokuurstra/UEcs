@@ -22,7 +22,7 @@
     },
     {
       "Name": "UEcsTests",
-      "Type": "Developer",
+      "Type": "DeveloperTool",
       "LoadingPhase": "Default"
     }
   ]

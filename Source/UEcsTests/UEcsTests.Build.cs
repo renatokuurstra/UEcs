@@ -8,7 +8,7 @@ public class UEcsTests : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         // This is a test/developer module
-        Type = ModuleType.CPlusPlus;
+        //Type = ModuleType.CPlusPlus;
 
         PublicDependencyModuleNames.AddRange(new string[] {
             "Core",
