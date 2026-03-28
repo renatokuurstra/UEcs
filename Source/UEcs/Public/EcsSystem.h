@@ -17,7 +17,7 @@ class UScriptStruct;
 /**
  * Base class for ECS Systems
  */
-UCLASS(Abstract)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class UECS_API UEcsSystem : public UObject
 {
 	GENERATED_BODY()
