@@ -17,6 +17,15 @@ struct FSystemArray
 };
 
 /**
+ * Standard ECS System Event Names
+ */
+struct UECS_API FEcsSystemEventNames
+{
+	static const FName BeginPlay;
+	static const FName EndPlay;
+};
+
+/**
  * 
  */
 UCLASS()
@@ -25,6 +34,13 @@ class UECS_API UEcsSystemEvents : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UEcsSystemEvents();
+
+	virtual void PostLoad() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 	UPROPERTY(EditAnywhere, Category = "ECS|System Events")
 	TMap<FName, FSystemArray> SystemsEvents;
 };

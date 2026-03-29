@@ -23,7 +23,7 @@ public:
 	AEcsContext();
 
 	UFUNCTION(BlueprintCallable, Category = "ECS|Systems")
-	void ExecuteEvent(FName& EventName);
+	void ExecuteEvent(const FName& EventName);
 
 protected:
 	virtual void BeginPlay() override;

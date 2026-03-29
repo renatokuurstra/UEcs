@@ -20,7 +20,7 @@ AEcsContext::AEcsContext()
 
 }
 
-void AEcsContext::ExecuteEvent(FName& EventName)
+void AEcsContext::ExecuteEvent(const FName& EventName)
 {
 	if(EcsSystemsEvents)
 	{
@@ -55,7 +55,23 @@ void AEcsContext::BeginPlay()
 	InitializeSystems(PostPhysicsSystems);
 	InitializeSystems(PostUpdateSystems);
 
+	if (EcsSystemsEvents)
+	{
+		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
+		{
+			for (UEcsSystem* Sys : Pair.Value.Systems)
+			{
+				if (Sys)
+				{
+					Sys->Initialize(Registry);
+				}
+			}
+		}
+	}
+
 	InitialiseTickFunctions();
+
+	ExecuteEvent(FEcsSystemEventNames::BeginPlay);
 
 	
 	// Register tick functions only if needed
@@ -85,6 +101,8 @@ void AEcsContext::BeginPlay()
 
 void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ExecuteEvent(FEcsSystemEventNames::EndPlay);
+
 	// Stop ticking first
 	PrePhysicsTick.UnRegisterTickFunction();
 	DuringPhysicsTick.UnRegisterTickFunction();
@@ -109,6 +127,20 @@ void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	CleanupSystems(DuringPhysicsSystems);
 	CleanupSystems(PostPhysicsSystems);
 	CleanupSystems(PostUpdateSystems);
+
+	if (EcsSystemsEvents)
+	{
+		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
+		{
+			for (UEcsSystem* Sys : Pair.Value.Systems)
+			{
+				if (Sys)
+				{
+					Sys->Deinitialize();
+				}
+			}
+		}
+	}
 
 	// Dispose of all entities/components and reset the registry
 	Registry.clear();
