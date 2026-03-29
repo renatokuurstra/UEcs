@@ -45,7 +45,7 @@ void AEcsContext::BeginPlay()
 		{
 			if (Sys)
 			{
-				Sys->Initialize(Registry);
+				Sys->Initialize(this, Registry);
 			}
 		}
 	};
@@ -59,13 +59,7 @@ void AEcsContext::BeginPlay()
 	{
 		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
 		{
-			for (UEcsSystem* Sys : Pair.Value.Systems)
-			{
-				if (Sys)
-				{
-					Sys->Initialize(Registry);
-				}
-			}
+			InitializeSystems(Pair.Value.Systems);
 		}
 	}
 

@@ -14,6 +14,8 @@ class UScriptStruct;
 
 #include "EcsSystem.generated.h"
 
+class AEcsContext;
+
 /**
  * Base class for ECS Systems
  */
@@ -28,10 +30,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ECS|System", meta = (AllowPrivateAccess = "true"))
 	TArray<UScriptStruct*> RequiredComponents;
     
-	virtual void Initialize(entt::registry& InRegistry) { EntitiesRegistry = &InRegistry;}
+	virtual void Initialize(AEcsContext* InContext, entt::registry& InRegistry)
+	{
+		Context = InContext;
+		EntitiesRegistry = &InRegistry;
+	}
 	
 	// Allow context to cleanup references on EndPlay
-	virtual void Deinitialize() { EntitiesRegistry = nullptr; }
+	virtual void Deinitialize()
+	{
+		EntitiesRegistry = nullptr;
+		Context = nullptr;
+	}
 
 	//This should be called by the system design to update all entities.
 	UFUNCTION(BlueprintCallable, Category = "ECS|System")
@@ -39,6 +49,20 @@ public:
     
 protected:
 	
+	/**
+	 * Access the owning ECS context.
+	 */
+	AEcsContext* GetContext() const { return Context; }
+
+	/**
+	 * Access the owning ECS context, cast to a specific type.
+	 */
+	template<typename T>
+	T* GetTypedContext() const
+	{
+		return Cast<T>(Context);
+	}
+
 	// Provide controlled access to the registry for systems that need to spawn/maintain entities
 	entt::registry& GetRegistry() const
 	{
@@ -83,4 +107,8 @@ protected:
 private:
 	// Not owned; set by Initialize() and cleared by Deinitialize().
 	entt::registry* EntitiesRegistry = nullptr;
+
+	// The owning context of this system. Not owned; set by Initialize() and cleared by Deinitialize().
+	UPROPERTY(Transient)
+	TObjectPtr<AEcsContext> Context = nullptr;
 };

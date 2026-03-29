@@ -5,8 +5,9 @@ A simple, intuitive ECS system for UnrealEngine
 
 ## 📚 Table of Contents
 
-1. [Current State](#1-Current-State)
-1. [Design Principles](#1-Design-Principles)
+1. [Current State](#1-current-state)
+1. [Design Principles](#2-design-principles)
+1. [Usage](#3-usage)
 
 ---
 
@@ -25,6 +26,30 @@ When MASS was announced I was happy, finally I could be using DOP very efficentl
 I want this to be very simple, relateively strict and intuitive. After a first setup to understand how to better work with templates(entt is heavely relying on templates for everything) and UE blueprint reflection.
 
 In my world even blueprints will be able to use this, as I'm a big fan of democratizing the development process. The goal of this plugin is not only forcing the user to follow more DOP principles, but also to simplify and publicize the ECS pattern.
+
+---
+
+## 3. Usage
+
+### AEcsContext
+The `AEcsContext` actor is the heart of the ECS. It owns the `entt::registry` and manages the lifecycle of systems. 
+
+### UEcsSystem
+Systems are `UObject`s that implement logic. To create a system, inherit from `UEcsSystem`.
+
+#### Initialization
+Override `Initialize` to set up your system. You now receive a pointer to the `AEcsContext` and the `entt::registry`.
+
+```cpp
+virtual void Initialize(AEcsContext* InContext, entt::registry& InRegistry) override
+{
+    Super::Initialize(InContext, InRegistry);
+    // Your setup logic here
+}
+```
+
+#### Accessing the Context
+Inside a system, use `GetContext()` or `GetTypedContext<T>()` to access the owning `AEcsContext`. This is preferred over `GetOuter()` as systems may be owned by `UDataAsset`s (e.g., when using `UEcsSystemEvents`).
 
 ## TODO
 1. Making entt private. Currently it needs to be public because I'm a lazy person.
