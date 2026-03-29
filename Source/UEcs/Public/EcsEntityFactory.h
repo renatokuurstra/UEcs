@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "entt/entt.hpp"
 
+class AEcsContext;
+
 /**
  * Base class for ECS Entity Factories without UObject
  */
@@ -13,8 +15,9 @@ struct FEcsEntityFactory
 public:
 	virtual ~FEcsEntityFactory() = default;
 
-	virtual void Initialize(entt::registry& InRegistry)
+	virtual void Initialize(AEcsContext* InContext, entt::registry& InRegistry)
 	{
+		Context = InContext;
 		Registry = &InRegistry;
 	}
 
@@ -77,5 +80,6 @@ protected:
 	}
 
 private:
+	AEcsContext* Context = nullptr;
 	entt::registry* Registry = nullptr;
 };

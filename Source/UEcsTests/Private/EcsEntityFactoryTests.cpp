@@ -17,7 +17,7 @@ TEST_CLASS(UEcs_EcsEntityFactory, "UEcs.EntityFactory")
 	{
 		entt::registry Registry;
 		FSimpleEntityFactory Factory;
-		Factory.Initialize(Registry);
+		Factory.Initialize(nullptr, Registry);
 		Factory.BuildEntities(); // default should be 1
 
 		// Check counts
@@ -61,7 +61,7 @@ TEST_CLASS(UEcs_EcsEntityFactory, "UEcs.EntityFactory")
 
 		entt::registry Registry;
 		FParamEntityFactory Factory;
-		Factory.Initialize(Registry);
+		Factory.Initialize(nullptr, Registry);
 		Factory.BuildEntities(1);
 
 		ASSERT_THAT(IsTrue(Registry.storage<FSpeedComp>().size() == 1));
