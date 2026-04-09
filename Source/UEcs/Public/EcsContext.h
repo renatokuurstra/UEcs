@@ -39,11 +39,12 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	UPROPERTY(EditDefaultsOnly, Category="ECS|Chain Events")
+	FEcsChainEvents EcsChainEvents;
+	
 private:
 	void InitialiseTickFunctions();
 
-	UPROPERTY(EditDefaultsOnly, Category="ECS|Chain Events")
-    FEcsChainEvents EcsChainEvents; 
 	
 	// Internal dispatcher for tick functions
 	void TickGroupUpdate(float DeltaTime, ETickingGroup Group);
