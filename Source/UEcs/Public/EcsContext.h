@@ -41,8 +41,8 @@ protected:
 private:
 	void InitialiseTickFunctions();
 
-	UPROPERTY(EditDefaultsOnly, Category="ECS|Systems")
-    TObjectPtr<class UEcsSystemEvents> EcsSystemsEvents; 
+	UPROPERTY(EditDefaultsOnly, Category="ECS|Chain Events")
+    TObjectPtr<class UEcsChainEvents> EcsChainEvents; 
 	
 	// Internal dispatcher for tick functions
 	void TickGroupUpdate(float DeltaTime, ETickingGroup Group);

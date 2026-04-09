@@ -2,7 +2,7 @@
 #include "EcsContext.h"
 
 #include "EcsSystem.h"
-#include "EcsSystemEvents.h"
+#include "EcsChainEvents.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 
@@ -23,9 +23,9 @@ AEcsContext::AEcsContext()
 
 void AEcsContext::ExecuteEvent(const FName& EventName)
 {
-	if(EcsSystemsEvents)
+	if(EcsChainEvents)
 	{
-		if (const FSystemEventData* EventData = EcsSystemsEvents->SystemsEvents.Find(EventName))
+		if (const FChainEventData* EventData = EcsChainEvents->ChainEvents.Find(EventName))
 		{
 			for (const TScriptInterface<IEcsEventElement>& Element : EventData->Elements)
 			{
@@ -81,9 +81,9 @@ void AEcsContext::BeginPlay()
 	InitializeElements(PostPhysicsElements);
 	InitializeElements(PostUpdateElements);
 
-	if (EcsSystemsEvents)
+	if (EcsChainEvents)
 	{
-		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
+		for (auto& Pair : EcsChainEvents->ChainEvents)
 		{
 			InitializeElements(Pair.Value.Elements);
 
@@ -101,7 +101,7 @@ void AEcsContext::BeginPlay()
 
 	InitialiseTickFunctions();
 
-	ExecuteEvent(FEcsSystemEventNames::BeginPlay);
+	ExecuteEvent(FEcsChainEventNames::BeginPlay);
 
 	
 	// Register tick functions only if needed
@@ -143,9 +143,9 @@ void AEcsContext::Update_Implementation(float DeltaTime)
 	TickGroupUpdate(DeltaTime, TG_PostUpdateWork);
 
 	// Update all event-based systems that are marked as update systems
-	if (EcsSystemsEvents)
+	if (EcsChainEvents)
 	{
-		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
+		for (auto& Pair : EcsChainEvents->ChainEvents)
 		{
 			if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec <= 0.0f)
 			{
@@ -158,7 +158,7 @@ void AEcsContext::Update_Implementation(float DeltaTime)
 void AEcsContext::Deinitialize_Implementation()
 {
 	// Similar to EndPlay but for non-actor contexts (if any) or nested usage
-	ExecuteEvent(FEcsSystemEventNames::EndPlay);
+	ExecuteEvent(FEcsChainEventNames::EndPlay);
 	
 	auto CleanupElements = [](TArray<TScriptInterface<IEcsEventElement>>& Elements)
 	{
@@ -233,9 +233,9 @@ void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	PostPhysicsTick.UnRegisterTickFunction();
 	PostUpdateTick.UnRegisterTickFunction();
 
-	if (EcsSystemsEvents)
+	if (EcsChainEvents)
 	{
-		for (auto& Pair : EcsSystemsEvents->SystemsEvents)
+		for (auto& Pair : EcsChainEvents->ChainEvents)
 		{
 			for (int32 i = Pair.Value.Elements.Num() - 1; i >= 0; --i)
 			{

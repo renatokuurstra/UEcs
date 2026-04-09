@@ -6,7 +6,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "EcsContext.h"
-#include "EcsSystemEvents.h"
+#include "EcsChainEvents.h"
 #include "TestSimpleEcsSystem.h"
 
 TEST_CLASS(UEcs_EcsContext, "UEcs.EcsContext")
@@ -58,7 +58,7 @@ TEST_CLASS(UEcs_EcsContext, "UEcs.EcsContext")
 		Context->AddElementToTickGroup(TG_PrePhysics, MakeEcsEventElement(ChildContext));
 
 		// Manually trigger BeginPlay to initialize everything
-		Context->ExecuteEvent(FEcsSystemEventNames::BeginPlay);
+		Context->ExecuteEvent(FEcsChainEventNames::BeginPlay);
 		
 		ASSERT_THAT(IsTrue(ChildSys->bIsInitialized, "Child system should be initialized after parent's BeginPlay"));
 
