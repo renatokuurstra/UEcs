@@ -5,15 +5,23 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "EcsSystem.h"
+#include "EcsEventElement.h"
 #include "EcsSystemEvents.generated.h"
 
+
 USTRUCT(BlueprintType)
-struct FSystemArray
+struct FSystemEventData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite)
-	TArray<UEcsSystem*> Systems;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ECS|System Events")
+	bool bIsUpdateSystems = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ECS|System Events", meta = (EditCondition = "bIsUpdateSystems"))
+	float UpdateFreqSec = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ECS|System Events")
+	TArray<TScriptInterface<IEcsEventElement>> Elements;
 };
 
 /**
@@ -42,5 +50,5 @@ public:
 #endif
 
 	UPROPERTY(EditAnywhere, Category = "ECS|System Events")
-	TMap<FName, FSystemArray> SystemsEvents;
+	TMap<FName, FSystemEventData> SystemsEvents;
 };

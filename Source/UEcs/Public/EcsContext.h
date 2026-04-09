@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "entt/entt.hpp"
+#include "EcsEventElement.h"
 #include "EcsContext.generated.h"
 
 
@@ -16,7 +17,7 @@ class UEcsSystem;
  * - Updates those systems in the corresponding engine tick group
  */
 UCLASS()
-class UECS_API AEcsContext : public AActor
+class UECS_API AEcsContext : public AActor, public IEcsEventElement
 {
 	GENERATED_BODY()
 public:
@@ -24,6 +25,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ECS|Systems")
 	void ExecuteEvent(const FName& EventName);
+
+	virtual void Initialize_Implementation(AEcsContext* InContext) override;
+	virtual void Update_Implementation(float DeltaTime) override;
+	virtual void Deinitialize_Implementation() override;
+
+	void AddElementToTickGroup(ETickingGroup Group, TScriptInterface<IEcsEventElement> Element);
+
+	entt::registry& GetRegistry() { return Registry; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,19 +50,20 @@ private:
 	// The ECS Registry (private and automatic)
 	entt::registry Registry;
 
-	// Arrays of systems per tick group
-	// Instanced so they are owned by this actor when added in editor/blueprints.
-	UPROPERTY(EditDefaultsOnly, Instanced, Category = "ECS|Systems")
-	TArray<UEcsSystem*> PrePhysicsSystems;
+	// Elements per tick group
+	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
+	TArray<TScriptInterface<IEcsEventElement>> PrePhysicsElements;
 
-	UPROPERTY(EditDefaultsOnly, Instanced, Category = "ECS|Systems")
-	TArray<UEcsSystem*> DuringPhysicsSystems;
+	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
+	TArray<TScriptInterface<IEcsEventElement>> DuringPhysicsElements;
 
-	UPROPERTY(EditDefaultsOnly, Instanced, Category = "ECS|Systems")
-	TArray<UEcsSystem*> PostPhysicsSystems;
+	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
+	TArray<TScriptInterface<IEcsEventElement>> PostPhysicsElements;
 
-	UPROPERTY(EditDefaultsOnly, Instanced, Category = "ECS|Systems")
-	TArray<UEcsSystem*> PostUpdateSystems;
+	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
+	TArray<TScriptInterface<IEcsEventElement>> PostUpdateElements;
+
+	TMap<FName, FTimerHandle> EventTimers;
 
 	// Custom tick functions for each group
 

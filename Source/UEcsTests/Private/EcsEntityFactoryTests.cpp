@@ -21,24 +21,24 @@ TEST_CLASS(UEcs_EcsEntityFactory, "UEcs.EntityFactory")
 		Factory.BuildEntities(); // default should be 1
 
 		// Check counts
-		ASSERT_THAT(IsTrue(Registry.storage<FSpeedComp>().size() == 1));
-		ASSERT_THAT(IsTrue(Registry.storage<FPositionComp>().size() == 1));
-		ASSERT_THAT(IsTrue(Registry.storage<FDirectionComp>().size() == 1));
+		ASSERT_THAT(IsTrue(Registry.storage<FSpeedComp>().size() == 1, "Registry should contain exactly one FSpeedComp component"));
+		ASSERT_THAT(IsTrue(Registry.storage<FPositionComp>().size() == 1, "Registry should contain exactly one FPositionComp component"));
+		ASSERT_THAT(IsTrue(Registry.storage<FDirectionComp>().size() == 1, "Registry should contain exactly one FDirectionComp component"));
 
 		// Check default values
 		auto View = Registry.view<FSpeedComp, FPositionComp, FDirectionComp>();
-		ASSERT_THAT(IsTrue(View.size_hint() == 1));
+		ASSERT_THAT(IsTrue(View.size_hint() == 1, "View should contain exactly one entity with required components"));
 		entt::entity Found = entt::null;
 		for (auto Entity : View) { Found = Entity; break; }
-		ASSERT_THAT(IsTrue(Found != entt::null));
+		ASSERT_THAT(IsTrue(Found != entt::null, "Should have found a valid entity in the view"));
 
 		const FSpeedComp& Speed = Registry.get<FSpeedComp>(Found);
 		const FPositionComp& Pos = Registry.get<FPositionComp>(Found);
 		const FDirectionComp& Dir = Registry.get<FDirectionComp>(Found);
 
-		ASSERT_THAT(IsTrue(FMath::IsNearlyEqual(Speed.Value, 0.f)));
-		ASSERT_THAT(IsTrue(Pos.Value.Equals(FVector::ZeroVector)));
-		ASSERT_THAT(IsTrue(Dir.Value.Equals(FVector::ForwardVector)));
+		ASSERT_THAT(IsTrue(FMath::IsNearlyEqual(Speed.Value, 0.f), "Default speed should be 0.0f"));
+		ASSERT_THAT(IsTrue(Pos.Value.Equals(FVector::ZeroVector), "Default position should be ZeroVector"));
+		ASSERT_THAT(IsTrue(Dir.Value.Equals(FVector::ForwardVector), "Default direction should be ForwardVector"));
 	}
 
 	TEST_METHOD(Creates_Entity_With_Parameters)
@@ -64,14 +64,14 @@ TEST_CLASS(UEcs_EcsEntityFactory, "UEcs.EntityFactory")
 		Factory.Initialize(nullptr, Registry);
 		Factory.BuildEntities(1);
 
-		ASSERT_THAT(IsTrue(Registry.storage<FSpeedComp>().size() == 1));
+		ASSERT_THAT(IsTrue(Registry.storage<FSpeedComp>().size() == 1, "Registry should contain one FSpeedComp after building one entity"));
 		entt::entity E = *Registry.view<FSpeedComp, FPositionComp, FDirectionComp>().begin();
 		const FSpeedComp& Speed = Registry.get<FSpeedComp>(E);
 		const FPositionComp& Pos = Registry.get<FPositionComp>(E);
 		const FDirectionComp& Dir = Registry.get<FDirectionComp>(E);
 
-		ASSERT_THAT(IsTrue(FMath::IsNearlyEqual(Speed.Value, 10.f)));
-		ASSERT_THAT(IsTrue(Pos.Value.Equals(FVector(1.f, 2.f, 3.f))));
-		ASSERT_THAT(IsTrue(Dir.Value.Equals(FVector(0.f, 1.f, 0.f))));
+		ASSERT_THAT(IsTrue(FMath::IsNearlyEqual(Speed.Value, 10.f), "Speed should match the value set in the custom factory (10.0f)"));
+		ASSERT_THAT(IsTrue(Pos.Value.Equals(FVector(1.f, 2.f, 3.f)), "Position should match the value set in the custom factory (1,2,3)"));
+		ASSERT_THAT(IsTrue(Dir.Value.Equals(FVector(0.f, 1.f, 0.f)), "Direction should match the value set in the custom factory (0,1,0)"));
 	}
 };

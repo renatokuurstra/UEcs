@@ -12,6 +12,7 @@
 
 class UScriptStruct;
 
+#include "EcsEventElement.h"
 #include "EcsSystem.generated.h"
 
 class AEcsContext;
@@ -20,7 +21,7 @@ class AEcsContext;
  * Base class for ECS Systems
  */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
-class UECS_API UEcsSystem : public UObject
+class UECS_API UEcsSystem : public UObject, public IEcsEventElement
 {
 	GENERATED_BODY()
 public:
@@ -30,22 +31,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ECS|System", meta = (AllowPrivateAccess = "true"))
 	TArray<UScriptStruct*> RequiredComponents;
     
-	virtual void Initialize(AEcsContext* InContext, entt::registry& InRegistry)
-	{
-		Context = InContext;
-		EntitiesRegistry = &InRegistry;
-	}
+	virtual void Initialize_Implementation(AEcsContext* InContext) override;
+	
+	virtual void Update_Implementation(float DeltaTime) override {}
 	
 	// Allow context to cleanup references on EndPlay
-	virtual void Deinitialize()
-	{
-		EntitiesRegistry = nullptr;
-		Context = nullptr;
-	}
+	virtual void Deinitialize_Implementation() override;
 
 	//This should be called by the system design to update all entities.
-	UFUNCTION(BlueprintCallable, Category = "ECS|System")
-	virtual void Update(float DeltaTime = 0.0f) {}
+	//Note: Update is also part of the interface, so we call the interface implementation via Execute_Update
+	//UFUNCTION(BlueprintCallable, Category = "ECS|System")
+	//virtual void Update(float DeltaTime = 0.0f) { Execute_Update(this, DeltaTime); }
     
 protected:
 	
@@ -64,11 +60,7 @@ protected:
 	}
 
 	// Provide controlled access to the registry for systems that need to spawn/maintain entities
-	entt::registry& GetRegistry() const
-	{
-		check(EntitiesRegistry);
-		return *EntitiesRegistry;
-	}
+	entt::registry& GetRegistry() const;
 
 	// Register a component type (called in subclass constructor)
 	template<typename T>

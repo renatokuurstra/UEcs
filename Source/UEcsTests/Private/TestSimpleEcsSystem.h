@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EcsSystem.h"
+#include "EcsEventElement.h"
 
 #include "TestSimpleEcsSystem.generated.h"
 
@@ -17,10 +18,28 @@ public:
 	{
 	}
 
-	virtual void Update(float /*DeltaTime*/) override
+	virtual void Update_Implementation(float DeltaTime) override
 	{
 		++TickCount;
 	}
+
+	virtual void Initialize_Implementation(AEcsContext* InContext) override
+	{
+		Super::Initialize_Implementation(InContext);
+		bIsInitialized = true;
+	}
+
+	virtual void Deinitialize_Implementation() override
+	{
+		Super::Deinitialize_Implementation();
+		bIsDeinitialized = true;
+	}
+
+	UPROPERTY()
+	bool bIsInitialized = false;
+
+	UPROPERTY()
+	bool bIsDeinitialized = false;
 
 	UFUNCTION(BlueprintCallable, Category = "ECS|System|Tests")
 	int32 GetTickCount() const { return TickCount; }

@@ -43,6 +43,6 @@ TEST_CLASS(UEcs_EcsSystem, "UEcs.System")
 
     TEST_METHOD(When_Given_Expect)
     {
-        ASSERT_THAT(IsTrue(true));
+        ASSERT_THAT(IsTrue(true, "Basic sanity check should always pass"));
     }
 };
