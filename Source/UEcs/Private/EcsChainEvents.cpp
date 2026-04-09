@@ -4,25 +4,22 @@
 
 const FName FEcsChainEventNames::BeginPlay = FName(TEXT("BeginPlay"));
 const FName FEcsChainEventNames::EndPlay = FName(TEXT("EndPlay"));
+const FName FEcsChainEventNames::PrePhysics = FName(TEXT("PrePhysics"));
+const FName FEcsChainEventNames::DuringPhysics = FName(TEXT("DuringPhysics"));
+const FName FEcsChainEventNames::PostPhysics = FName(TEXT("PostPhysics"));
+const FName FEcsChainEventNames::PostUpdate = FName(TEXT("PostUpdate"));
 
-UEcsChainEvents::UEcsChainEvents()
+FEcsChainEvents::FEcsChainEvents()
+{
+	EnsureDefaultEvents();
+}
+
+void FEcsChainEvents::EnsureDefaultEvents()
 {
 	ChainEvents.FindOrAdd(FEcsChainEventNames::BeginPlay);
 	ChainEvents.FindOrAdd(FEcsChainEventNames::EndPlay);
+	ChainEvents.FindOrAdd(FEcsChainEventNames::PrePhysics);
+	ChainEvents.FindOrAdd(FEcsChainEventNames::DuringPhysics);
+	ChainEvents.FindOrAdd(FEcsChainEventNames::PostPhysics);
+	ChainEvents.FindOrAdd(FEcsChainEventNames::PostUpdate);
 }
-
-void UEcsChainEvents::PostLoad()
-{
-	Super::PostLoad();
-	ChainEvents.FindOrAdd(FEcsChainEventNames::BeginPlay);
-	ChainEvents.FindOrAdd(FEcsChainEventNames::EndPlay);
-}
-
-#if WITH_EDITOR
-void UEcsChainEvents::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-	ChainEvents.FindOrAdd(FEcsChainEventNames::BeginPlay);
-	ChainEvents.FindOrAdd(FEcsChainEventNames::EndPlay);
-}
-#endif

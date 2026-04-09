@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EcsChainEvents.h"
 #include "GameFramework/Actor.h"
 #include "entt/entt.hpp"
 #include "EcsEventElement.h"
@@ -16,7 +17,7 @@ class UEcsSystem;
  * - Holds arrays of UEcsSystem instances per tick group
  * - Updates those systems in the corresponding engine tick group
  */
-UCLASS()
+UCLASS(BlueprintType)
 class UECS_API AEcsContext : public AActor, public IEcsEventElement
 {
 	GENERATED_BODY()
@@ -42,26 +43,13 @@ private:
 	void InitialiseTickFunctions();
 
 	UPROPERTY(EditDefaultsOnly, Category="ECS|Chain Events")
-    TObjectPtr<class UEcsChainEvents> EcsChainEvents; 
+    FEcsChainEvents EcsChainEvents; 
 	
 	// Internal dispatcher for tick functions
 	void TickGroupUpdate(float DeltaTime, ETickingGroup Group);
 
 	// The ECS Registry (private and automatic)
 	entt::registry Registry;
-
-	// Elements per tick group
-	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
-	TArray<TScriptInterface<IEcsEventElement>> PrePhysicsElements;
-
-	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
-	TArray<TScriptInterface<IEcsEventElement>> DuringPhysicsElements;
-
-	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
-	TArray<TScriptInterface<IEcsEventElement>> PostPhysicsElements;
-
-	UPROPERTY(EditDefaultsOnly, Category = "ECS|Systems")
-	TArray<TScriptInterface<IEcsEventElement>> PostUpdateElements;
 
 	TMap<FName, FTimerHandle> EventTimers;
 
@@ -70,19 +58,15 @@ private:
 	struct FContextTickFunction : public FTickFunction
 	{
 		AEcsContext* Owner = nullptr;
-		ETickingGroup MyGroup = TG_PrePhysics;
+		FName EventName;
+
+		FContextTickFunction() : Owner(nullptr), EventName(NAME_None) {}
+		FContextTickFunction(AEcsContext* InOwner, FName InEventName) : Owner(InOwner), EventName(InEventName) {}
 
 		virtual void ExecuteTick(float DeltaTime, ELevelTick TickType, ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent) override;
 		virtual FString DiagnosticMessage() override { return TEXT("AEcsContext::FContextTickFunction"); }
 		virtual FName DiagnosticContext(bool bDetailed) override { return FName(TEXT("AEcsContext")); }
 	};
 
-
-	FContextTickFunction PrePhysicsTick;
-
-	FContextTickFunction DuringPhysicsTick;
-
-	FContextTickFunction PostPhysicsTick;
-
-	FContextTickFunction PostUpdateTick;
+	TMap<FName, FContextTickFunction*> TickFunctions;
 };

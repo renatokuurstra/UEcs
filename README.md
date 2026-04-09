@@ -44,8 +44,8 @@ The `AEcsContext` actor is the heart of the ECS. It owns the `entt::registry` an
 ### UEcsSystem
 Systems are `UObject`s that implement logic. To create a system, inherit from `UEcsSystem`. They implement `IEcsEventElement` to participate in the ECS lifecycle.
 
-### UEcsChainEvents
-A `UDataAsset` that maps `FName` event identifiers to a set of `IEcsEventElement`s. This allows for data-driven execution of logic at specific moments (like `BeginPlay` or `EndPlay`) or periodically.
+### FEcsChainEvents
+A `UStruct` that maps `FName` event identifiers to a set of `IEcsEventElement`s. This is held by `AEcsContext` to manage event-driven or periodic execution of logic at specific moments (like `BeginPlay` or `EndPlay`).
 
 #### Periodic Events
 Each entry in `ChainEvents` can be configured as a periodic update:
@@ -81,7 +81,7 @@ IEcsEventElement::Execute_Deinitialize(Element.GetObject());
 Inside a C++ system, use `GetRegistry()` to access the `entt::registry`.
 
 #### Accessing the Context
-Inside a system, use `GetContext()` or `GetTypedContext<T>()` to access the owning `AEcsContext`. This is preferred over `GetOuter()` as systems may be owned by `UDataAsset`s (e.g., when using `UEcsChainEvents`).
+Inside a system, use `GetContext()` or `GetTypedContext<T>()` to access the owning `AEcsContext`.
 
 ## TODO
 1. Making entt private. Currently it needs to be public because I'm a lazy person.

@@ -11,38 +11,32 @@ void AEcsContext::FContextTickFunction::ExecuteTick(float DeltaTime, ELevelTick 
 {
 	if (Owner)
 	{
-		Owner->TickGroupUpdate(DeltaTime, MyGroup);
+		Owner->ExecuteEvent(EventName);
 	}
 }
 
 AEcsContext::AEcsContext()
 {
 	PrimaryActorTick.bCanEverTick = false; // we use custom tick functions per group
-
 }
 
 void AEcsContext::ExecuteEvent(const FName& EventName)
 {
-	if(EcsChainEvents)
+	if (const FChainEventData* EventData = EcsChainEvents.ChainEvents.Find(EventName))
 	{
-		if (const FChainEventData* EventData = EcsChainEvents->ChainEvents.Find(EventName))
+		for (const TScriptInterface<IEcsEventElement>& Element : EventData->Elements)
 		{
-			for (const TScriptInterface<IEcsEventElement>& Element : EventData->Elements)
+			if (Element)
 			{
-				if (Element)
-				{
-					// For initialization/deinitialization events, we might want to call those specifically,
-					// but generally Execute_Update is used as the generic "trigger" for event elements.
-					IEcsEventElement::Execute_Update(Element.GetObject(), 0.0f);
-				}
+				IEcsEventElement::Execute_Update(Element.GetObject(), GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f);
 			}
 		}
 	}
 
-	// Propagate to nested contexts in all tick groups
-	auto PropagateToNested = [this, EventName](TArray<TScriptInterface<IEcsEventElement>>& Elements)
+	// Propagate to nested contexts in all events
+	for (auto& Pair : EcsChainEvents.ChainEvents)
 	{
-		for (const TScriptInterface<IEcsEventElement>& Element : Elements)
+		for (const TScriptInterface<IEcsEventElement>& Element : Pair.Value.Elements)
 		{
 			if (Element)
 			{
@@ -52,50 +46,31 @@ void AEcsContext::ExecuteEvent(const FName& EventName)
 				}
 			}
 		}
-	};
-
-	PropagateToNested(PrePhysicsElements);
-	PropagateToNested(DuringPhysicsElements);
-	PropagateToNested(PostPhysicsElements);
-	PropagateToNested(PostUpdateElements);
+	}
 }
 
 void AEcsContext::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initialize all elements with our context
-	auto InitializeElements = [this](TArray<TScriptInterface<IEcsEventElement>>& Elements)
+	for (auto& Pair : EcsChainEvents.ChainEvents)
 	{
-		for (TScriptInterface<IEcsEventElement>& Element : Elements)
+		for (TScriptInterface<IEcsEventElement>& Element : Pair.Value.Elements)
 		{
 			if (Element)
 			{
 				IEcsEventElement::Execute_Initialize(Element.GetObject(), this);
 			}
 		}
-	};
 
-	InitializeElements(PrePhysicsElements);
-	InitializeElements(DuringPhysicsElements);
-	InitializeElements(PostPhysicsElements);
-	InitializeElements(PostUpdateElements);
-
-	if (EcsChainEvents)
-	{
-		for (auto& Pair : EcsChainEvents->ChainEvents)
+		if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec > 0.0f)
 		{
-			InitializeElements(Pair.Value.Elements);
-
-			if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec > 0.0f)
+			FTimerHandle& Handle = EventTimers.FindOrAdd(Pair.Key);
+			const FName EventName = Pair.Key;
+			GetWorldTimerManager().SetTimer(Handle, [this, EventName]()
 			{
-				FTimerHandle& Handle = EventTimers.FindOrAdd(Pair.Key);
-				const FName EventName = Pair.Key;
-				GetWorldTimerManager().SetTimer(Handle, [this, EventName]()
-				{
-					ExecuteEvent(EventName);
-				}, Pair.Value.UpdateFreqSec, true);
-			}
+				ExecuteEvent(EventName);
+			}, Pair.Value.UpdateFreqSec, true);
 		}
 	}
 
@@ -103,29 +78,18 @@ void AEcsContext::BeginPlay()
 
 	ExecuteEvent(FEcsChainEventNames::BeginPlay);
 
-	
-	// Register tick functions only if needed
-	auto* Level = GetLevel(); // owner for registration
-
-	if (PrePhysicsElements.Num() > 0)
+	// Register tick functions only if they have elements
+	auto* Level = GetLevel(); 
+	for (auto& Pair : TickFunctions)
 	{
-		PrePhysicsTick.SetTickFunctionEnable(true);
-		PrePhysicsTick.RegisterTickFunction(Level);
-	}
-	if (DuringPhysicsElements.Num() > 0)
-	{
-		DuringPhysicsTick.SetTickFunctionEnable(true);
-		DuringPhysicsTick.RegisterTickFunction(Level);
-	}
-	if (PostPhysicsElements.Num() > 0)
-	{
-		PostPhysicsTick.SetTickFunctionEnable(true);
-		PostPhysicsTick.RegisterTickFunction(Level);
-	}
-	if (PostUpdateElements.Num() > 0)
-	{
-		PostUpdateTick.SetTickFunctionEnable(true);
-		PostUpdateTick.RegisterTickFunction(Level);
+		if (const FChainEventData* EventData = EcsChainEvents.ChainEvents.Find(Pair.Key))
+		{
+			if (EventData->Elements.Num() > 0)
+			{
+				Pair.Value->SetTickFunctionEnable(true);
+				Pair.Value->RegisterTickFunction(Level);
+			}
+		}
 	}
 }
 
@@ -137,20 +101,17 @@ void AEcsContext::Initialize_Implementation(AEcsContext* InContext)
 
 void AEcsContext::Update_Implementation(float DeltaTime)
 {
-	TickGroupUpdate(DeltaTime, TG_PrePhysics);
-	TickGroupUpdate(DeltaTime, TG_DuringPhysics);
-	TickGroupUpdate(DeltaTime, TG_PostPhysics);
-	TickGroupUpdate(DeltaTime, TG_PostUpdateWork);
+	ExecuteEvent(FEcsChainEventNames::PrePhysics);
+	ExecuteEvent(FEcsChainEventNames::DuringPhysics);
+	ExecuteEvent(FEcsChainEventNames::PostPhysics);
+	ExecuteEvent(FEcsChainEventNames::PostUpdate);
 
 	// Update all event-based systems that are marked as update systems
-	if (EcsChainEvents)
+	for (auto& Pair : EcsChainEvents.ChainEvents)
 	{
-		for (auto& Pair : EcsChainEvents->ChainEvents)
+		if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec <= 0.0f)
 		{
-			if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec <= 0.0f)
-			{
-				ExecuteEvent(Pair.Key);
-			}
+			ExecuteEvent(Pair.Key);
 		}
 	}
 }
@@ -160,63 +121,50 @@ void AEcsContext::Deinitialize_Implementation()
 	// Similar to EndPlay but for non-actor contexts (if any) or nested usage
 	ExecuteEvent(FEcsChainEventNames::EndPlay);
 	
-	auto CleanupElements = [](TArray<TScriptInterface<IEcsEventElement>>& Elements)
+	for (auto& Pair : EcsChainEvents.ChainEvents)
 	{
-		for (int32 i = Elements.Num() - 1; i >= 0; --i)
+		for (int32 i = Pair.Value.Elements.Num() - 1; i >= 0; --i)
 		{
-			if (Elements[i])
+			if (Pair.Value.Elements[i])
 			{
-				IEcsEventElement::Execute_Deinitialize(Elements[i].GetObject());
+				IEcsEventElement::Execute_Deinitialize(Pair.Value.Elements[i].GetObject());
 			}
 		}
-		Elements.Empty();
-	};
-
-	CleanupElements(PrePhysicsElements);
-	CleanupElements(DuringPhysicsElements);
-	CleanupElements(PostPhysicsElements);
-	CleanupElements(PostUpdateElements);
+	}
 }
 
 void AEcsContext::AddElementToTickGroup(ETickingGroup Group, TScriptInterface<IEcsEventElement> Element)
 {
 	if (!Element) return;
 
-	TArray<TScriptInterface<IEcsEventElement>>* ElementsPtr = nullptr;
+	FName EventName;
 	switch (Group)
 	{
-		case TG_PrePhysics: ElementsPtr = &PrePhysicsElements; break;
-		case TG_DuringPhysics: ElementsPtr = &DuringPhysicsElements; break;
-		case TG_PostPhysics: ElementsPtr = &PostPhysicsElements; break;
-		case TG_PostUpdateWork: ElementsPtr = &PostUpdateElements; break;
+		case TG_PrePhysics: EventName = FEcsChainEventNames::PrePhysics; break;
+		case TG_DuringPhysics: EventName = FEcsChainEventNames::DuringPhysics; break;
+		case TG_PostPhysics: EventName = FEcsChainEventNames::PostPhysics; break;
+		case TG_PostUpdateWork: EventName = FEcsChainEventNames::PostUpdate; break;
 		default: break;
 	}
 
-	if (ElementsPtr)
+	if (!EventName.IsNone())
 	{
-		ElementsPtr->Add(Element);
+		FChainEventData& EventData = EcsChainEvents.ChainEvents.FindOrAdd(EventName);
+		EventData.Elements.Add(Element);
 		IEcsEventElement::Execute_Initialize(Element.GetObject(), this);
 		
 		// If we're already playing, we might need to register the tick function if it wasn't already
 		if (HasActorBegunPlay())
 		{
 			InitialiseTickFunctions();
-			// And register it if it's the first element
-			if (ElementsPtr->Num() == 1)
+			FContextTickFunction** TickFuncPtr = TickFunctions.Find(EventName);
+			if (TickFuncPtr && *TickFuncPtr)
 			{
-				FTickFunction* TickFunc = nullptr;
-				switch (Group)
+				FContextTickFunction& TickFunc = **TickFuncPtr;
+				if (!TickFunc.IsTickFunctionRegistered())
 				{
-					case TG_PrePhysics: TickFunc = &PrePhysicsTick; break;
-					case TG_DuringPhysics: TickFunc = &DuringPhysicsTick; break;
-					case TG_PostPhysics: TickFunc = &PostPhysicsTick; break;
-					case TG_PostUpdateWork: TickFunc = &PostUpdateTick; break;
-					default: break;
-				}
-				if (TickFunc && !TickFunc->IsTickFunctionRegistered())
-				{
-					TickFunc->SetTickFunctionEnable(true);
-					TickFunc->RegisterTickFunction(GetLevel());
+					TickFunc.SetTickFunctionEnable(true);
+					TickFunc.RegisterTickFunction(GetLevel());
 				}
 			}
 		}
@@ -228,30 +176,18 @@ void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Deinitialize_Implementation();
 
 	// Stop ticking
-	PrePhysicsTick.UnRegisterTickFunction();
-	DuringPhysicsTick.UnRegisterTickFunction();
-	PostPhysicsTick.UnRegisterTickFunction();
-	PostUpdateTick.UnRegisterTickFunction();
-
-	if (EcsChainEvents)
+	for (auto& Pair : TickFunctions)
 	{
-		for (auto& Pair : EcsChainEvents->ChainEvents)
-		{
-			for (int32 i = Pair.Value.Elements.Num() - 1; i >= 0; --i)
-			{
-				if (Pair.Value.Elements[i])
-				{
-					IEcsEventElement::Execute_Deinitialize(Pair.Value.Elements[i].GetObject());
-				}
-			}
-		}
-
-		for (auto& Pair : EventTimers)
-		{
-			GetWorldTimerManager().ClearTimer(Pair.Value);
-		}
-		EventTimers.Empty();
+		Pair.Value->UnRegisterTickFunction();
+		delete Pair.Value;
 	}
+	TickFunctions.Empty();
+
+	for (auto& Pair : EventTimers)
+	{
+		GetWorldTimerManager().ClearTimer(Pair.Value);
+	}
+	EventTimers.Empty();
 
 	// Dispose of all entities/components and reset the registry
 	Registry.clear();
@@ -263,51 +199,25 @@ void AEcsContext::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AEcsContext::InitialiseTickFunctions()
 {
 	UE_LOG(LogTemp, Log, TEXT("[DEBUG_LOG] AEcsContext::InitialiseTickFunctions called on %s"), *GetName());
-	// Initialize tick functions
-	PrePhysicsTick.Owner = this;
-	PrePhysicsTick.MyGroup = TG_PrePhysics;
-	PrePhysicsTick.TickGroup = TG_PrePhysics;
-	PrePhysicsTick.bCanEverTick = true;
-	PrePhysicsTick.SetTickFunctionEnable(false);
+	
+	auto SetupTick = [this](FName EventName, ETickingGroup Group)
+	{
+		if (TickFunctions.Contains(EventName)) return;
 
-	DuringPhysicsTick.Owner = this;
-	DuringPhysicsTick.MyGroup = TG_DuringPhysics;
-	DuringPhysicsTick.TickGroup = TG_DuringPhysics;
-	DuringPhysicsTick.bCanEverTick = true;
-	DuringPhysicsTick.SetTickFunctionEnable(false);
+		FContextTickFunction* TickFunc = new FContextTickFunction(this, EventName);
+		TickFunc->TickGroup = Group;
+		TickFunc->bCanEverTick = true;
+		TickFunc->SetTickFunctionEnable(false);
+		TickFunctions.Add(EventName, TickFunc);
+	};
 
-	PostPhysicsTick.Owner = this;
-	PostPhysicsTick.MyGroup = TG_PostPhysics;
-	PostPhysicsTick.TickGroup = TG_PostPhysics;
-	PostPhysicsTick.bCanEverTick = true;
-	PostPhysicsTick.SetTickFunctionEnable(false);
-
-	PostUpdateTick.Owner = this;
-	PostUpdateTick.MyGroup = TG_PostUpdateWork;
-	PostUpdateTick.TickGroup = TG_PostUpdateWork;
-	PostUpdateTick.bCanEverTick = true;
-	PostUpdateTick.SetTickFunctionEnable(false);
+	SetupTick(FEcsChainEventNames::PrePhysics, TG_PrePhysics);
+	SetupTick(FEcsChainEventNames::DuringPhysics, TG_DuringPhysics);
+	SetupTick(FEcsChainEventNames::PostPhysics, TG_PostPhysics);
+	SetupTick(FEcsChainEventNames::PostUpdate, TG_PostUpdateWork);
 }
 
 void AEcsContext::TickGroupUpdate(float DeltaTime, ETickingGroup Group)
 {
-	TArray<TScriptInterface<IEcsEventElement>>* ElementsPtr = nullptr;
-	switch (Group)
-	{
-		case TG_PrePhysics: ElementsPtr = &PrePhysicsElements; break;
-		case TG_DuringPhysics: ElementsPtr = &DuringPhysicsElements; break;
-		case TG_PostPhysics: ElementsPtr = &PostPhysicsElements; break;
-		case TG_PostUpdateWork: ElementsPtr = &PostUpdateElements; break;
-		default: break;
-	}
-
-	if (!ElementsPtr) return;
-
-	for (TScriptInterface<IEcsEventElement>& Element : *ElementsPtr)
-	{
-		if (Element)
-		{
-			IEcsEventElement::Execute_Update(Element.GetObject(), DeltaTime);
-		}
-	}
+	// This function is now deprecated in favor of ExecuteEvent called from ExecuteTick
 }

@@ -31,23 +31,22 @@ struct UECS_API FEcsChainEventNames
 {
 	static const FName BeginPlay;
 	static const FName EndPlay;
+
+	static const FName PrePhysics;
+	static const FName DuringPhysics;
+	static const FName PostPhysics;
+	static const FName PostUpdate;
 };
 
-/**
- * 
- */
-UCLASS()
-class UECS_API UEcsChainEvents : public UDataAsset
+USTRUCT(BlueprintType)
+struct UECS_API FEcsChainEvents
 {
 	GENERATED_BODY()
 
 public:
-	UEcsChainEvents();
+	FEcsChainEvents();
 
-	virtual void PostLoad() override;
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
+	void EnsureDefaultEvents();
 
 	UPROPERTY(EditAnywhere, Category = "ECS|Chain Events")
 	TMap<FName, FChainEventData> ChainEvents;

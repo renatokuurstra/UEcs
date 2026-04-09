@@ -8,7 +8,7 @@
 
 class AEcsContext;
 
-UINTERFACE(MinimalAPI, Blueprintable)
+UINTERFACE(MinimalAPI, BlueprintType)
 class UEcsEventElement : public UInterface
 {
 	GENERATED_BODY()
