@@ -25,7 +25,7 @@ public:
 	AEcsContext();
 
 	UFUNCTION(BlueprintCallable, Category = "ECS|Systems")
-	void ExecuteEvent(const FName& EventName);
+	void ExecuteEvent(const FName& EventName, float DeltaTime = -1.0f);
 
 	virtual void Initialize_Implementation(AEcsContext* InContext) override;
 	virtual void Update_Implementation(float DeltaTime) override;
@@ -39,7 +39,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UPROPERTY(EditDefaultsOnly, Category="ECS|Chain Events")
+	UPROPERTY(VisibleAnywhere, Category="ECS|Chain Events", Transient)
 	FEcsChainEvents EcsChainEvents;
 	
 private:
@@ -70,4 +70,6 @@ private:
 	};
 
 	TMap<FName, FContextTickFunction*> TickFunctions;
+
+	TMap<FName, double> LastExecutionTimes;
 };

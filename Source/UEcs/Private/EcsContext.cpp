@@ -11,7 +11,7 @@ void AEcsContext::FContextTickFunction::ExecuteTick(float DeltaTime, ELevelTick 
 {
 	if (Owner)
 	{
-		Owner->ExecuteEvent(EventName);
+		Owner->ExecuteEvent(EventName, DeltaTime);
 	}
 }
 
@@ -20,15 +20,34 @@ AEcsContext::AEcsContext()
 	PrimaryActorTick.bCanEverTick = false; // we use custom tick functions per group
 }
 
-void AEcsContext::ExecuteEvent(const FName& EventName)
+void AEcsContext::ExecuteEvent(const FName& EventName, float DeltaTime)
 {
+	float FinalDeltaTime = DeltaTime;
+
+	const double CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	const double* LastTimePtr = LastExecutionTimes.Find(EventName);
+
+	if (FinalDeltaTime < 0.0f)
+	{
+		if (LastTimePtr)
+		{
+			FinalDeltaTime = static_cast<float>(CurrentTime - *LastTimePtr);
+		}
+		else
+		{
+			FinalDeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f;
+		}
+	}
+
+	LastExecutionTimes.Add(EventName, CurrentTime);
+
 	if (const FChainEventData* EventData = EcsChainEvents.ChainEvents.Find(EventName))
 	{
 		for (const TScriptInterface<IEcsEventElement>& Element : EventData->Elements)
 		{
 			if (Element)
 			{
-				IEcsEventElement::Execute_Update(Element.GetObject(), GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f);
+				IEcsEventElement::Execute_Update(Element.GetObject(), FinalDeltaTime);
 			}
 		}
 	}
@@ -42,7 +61,7 @@ void AEcsContext::ExecuteEvent(const FName& EventName)
 			{
 				if (AEcsContext* NestedContext = Cast<AEcsContext>(Element.GetObject()))
 				{
-					NestedContext->ExecuteEvent(EventName);
+					NestedContext->ExecuteEvent(EventName, FinalDeltaTime);
 				}
 			}
 		}
@@ -101,17 +120,17 @@ void AEcsContext::Initialize_Implementation(AEcsContext* InContext)
 
 void AEcsContext::Update_Implementation(float DeltaTime)
 {
-	ExecuteEvent(FEcsChainEventNames::PrePhysics);
-	ExecuteEvent(FEcsChainEventNames::DuringPhysics);
-	ExecuteEvent(FEcsChainEventNames::PostPhysics);
-	ExecuteEvent(FEcsChainEventNames::PostUpdate);
+	ExecuteEvent(FEcsChainEventNames::PrePhysics, DeltaTime);
+	ExecuteEvent(FEcsChainEventNames::DuringPhysics, DeltaTime);
+	ExecuteEvent(FEcsChainEventNames::PostPhysics, DeltaTime);
+	ExecuteEvent(FEcsChainEventNames::PostUpdate, DeltaTime);
 
 	// Update all event-based systems that are marked as update systems
 	for (auto& Pair : EcsChainEvents.ChainEvents)
 	{
 		if (Pair.Value.bIsUpdateSystems && Pair.Value.UpdateFreqSec <= 0.0f)
 		{
-			ExecuteEvent(Pair.Key);
+			ExecuteEvent(Pair.Key, DeltaTime);
 		}
 	}
 }
