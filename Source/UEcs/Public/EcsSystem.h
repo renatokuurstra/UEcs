@@ -75,6 +75,13 @@ protected:
 	auto GetView()
 	{
 		static_assert(sizeof...(TComponents) > 0, "Must specify at least one component type");
+		if (!EntitiesRegistry)
+		{
+			// Return an empty view if not initialized. 
+			// We use a temporary registry to create a valid but empty view of the correct type.
+			static entt::registry EmptyRegistry;
+			return EmptyRegistry.view<TComponents...>();
+		}
 
 #if WITH_EDITOR || UE_BUILD_DEBUG
 		// Validation only in editor/debug builds
