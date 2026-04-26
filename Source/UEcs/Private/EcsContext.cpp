@@ -47,6 +47,7 @@ void AEcsContext::ExecuteEvent(const FName& EventName, float DeltaTime)
 		{
 			if (Element)
 			{
+				SCOPED_NAMED_EVENT_FSTRING(Element.GetObject()->GetClass()->GetName(), FColor::Cyan);
 				IEcsEventElement::Execute_Update(Element.GetObject(), FinalDeltaTime);
 			}
 		}
@@ -61,6 +62,7 @@ void AEcsContext::ExecuteEvent(const FName& EventName, float DeltaTime)
 			{
 				if (AEcsContext* NestedContext = Cast<AEcsContext>(Element.GetObject()))
 				{
+					SCOPED_NAMED_EVENT_FSTRING(Element.GetObject()->GetClass()->GetName(), FColor::Cyan);
 					NestedContext->ExecuteEvent(EventName, FinalDeltaTime);
 				}
 			}
@@ -78,6 +80,7 @@ void AEcsContext::BeginPlay()
 		{
 			if (Element)
 			{
+				SCOPED_NAMED_EVENT_FSTRING(Element.GetObject()->GetClass()->GetName(), FColor::Cyan);
 				IEcsEventElement::Execute_Initialize(Element.GetObject(), this);
 			}
 		}
